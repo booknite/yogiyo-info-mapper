@@ -20,7 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import pandas as pd
 
-KAKAO_API_KEY = "27bece31204e315fc7f375d8a0fec0ca"
+KAKAO_API_KEY = ""
 
 #Korean & English Translations
 
