@@ -2,6 +2,23 @@
 
 This application scrapes restaurant information from the Yogiyo website, saves the data in Excel format, and displays the restaurant locations on an interactive map using Folium and the Kakao Map API.
 
+### Yogiyo Info Mapper Demos
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="yogiyo-info-mapper-demo-1.gif" alt="Yogiyo Info Mapper Demo 1" width="400"/>
+      <br />
+      <em>Demo 1</em>
+    </td>
+    <td align="center">
+      <img src="yogiyo-info-mapper-demo-2.gif" alt="Yogiyo Info Mapper Demo 2" width="400"/>
+      <br />
+      <em>Demo 2</em>
+    </td>
+  </tr>
+</table>
+
 ## Features
 
 * User-friendly GUI for inputting addresses and selecting categories
