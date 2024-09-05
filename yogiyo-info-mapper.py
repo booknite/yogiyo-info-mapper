@@ -196,6 +196,7 @@ class ScrapingThread(QThread):
     progress = pyqtSignal(int)
     finished = pyqtSignal(list)
     log = pyqtSignal(str)
+    partial_data = pyqtSignal(list) 
 
     def __init__(self, address, category, save_location, tr):
         super().__init__()
@@ -206,6 +207,7 @@ class ScrapingThread(QThread):
         self.scraped_data = []
         self.selected_address = None
         self.tr = tr
+        self.output_file = None
 
 	# Chrome WebDriver
 
@@ -301,24 +303,33 @@ class ScrapingThread(QThread):
             safe_category = self.sanitize_filename(self.category)
             filename = f"{safe_address} ({safe_category})"
             safe_filename = self.sanitize_filename(filename)
-            output_file = os.path.join(self.save_location, f"{safe_filename}.xlsx")
+            self.output_file = os.path.join(self.save_location, f"{safe_filename}.xlsx")
             
             for i, restaurant in enumerate(restaurants, 1):
                 if not self.is_running:
-                    self.log.emit(self.tr("Scraping stopped by user."))
+                    #self.save_data()  
                     return
                 self.log.emit(self.tr("Scraping {}/{}:").format(i, total_restaurants) + f" {restaurant}")
                 info = self.scrape_restaurant_info(driver, restaurant)
                 self.scraped_data.append(info)
                 self.progress.emit(int((i / total_restaurants) * 100))
+                self.partial_data.emit(self.scraped_data)  
 
-            df = pd.DataFrame(self.scraped_data, columns=["NAME", "HOURS", "PHONE", "ADDRESS"])
-            df['PHONE'] = df['PHONE'].str.replace(r'\s*\(요기요 제공 번호\)', '', regex=True)
-            df.to_excel(output_file, index=False)
-
-            self.log.emit(f"{self.tr('Scraping complete. Data saved to')} {output_file}")
+            #self.save_data()
+            #self.log.emit(f"{self.tr('Scraping complete. Data saved to')} {self.output_file}")
         except Exception as e:
             self.log.emit(f"{self.tr('An error occurred while scraping restaurants:')} {e}")
+        finally:
+            self.save_data()
+            
+    def save_data(self):
+        if self.scraped_data:
+            df = pd.DataFrame(self.scraped_data, columns=["NAME", "HOURS", "PHONE", "ADDRESS"])
+            df['PHONE'] = df['PHONE'].str.replace(r'\s*\(요기요 제공 번호\)', '', regex=True)
+            df.to_excel(self.output_file, index=False)
+            self.log.emit(f"{self.tr('Scraping complete. Data saved to')} {self.output_file}")
+        else:
+            self.log.emit(self.tr("No data to save."))
 
     def scroll_to_bottom(self, driver):
         last_height = driver.execute_script("return document.body.scrollHeight")
@@ -372,7 +383,8 @@ class ScrapingThread(QThread):
 
     def stop(self):
         self.is_running = False
-
+        #self.save_data() 
+        
 	# Main application class for the scraper UI
 
 class ScraperApp(QMainWindow):
@@ -604,6 +616,7 @@ class ScraperApp(QMainWindow):
         self.scraping_thread.progress.connect(self.update_progress)
         self.scraping_thread.finished.connect(self.on_scraping_finished)
         self.scraping_thread.log.connect(self.show_log)
+        self.scraping_thread.partial_data.connect(self.update_scraped_data)
         self.scraping_thread.start()
 
     def stop_scraping(self):
@@ -613,7 +626,12 @@ class ScraperApp(QMainWindow):
         self.start_button.setEnabled(True)
         self.stop_button.setEnabled(False)
         self.show_log(self.tr("Scraping stopped by user."))
-
+        self.plot_map_button.setEnabled(True) 
+        
+    def update_scraped_data(self, data):
+        self.scraped_data = data
+        self.update_data_list()
+        
     def update_progress(self, value):
         self.progress_bar.setValue(value)
 
